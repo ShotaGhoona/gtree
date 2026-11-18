@@ -569,6 +569,7 @@ table.s td.n:nth-child(3){border-left:1px solid var(--bd)}
 .md{padding:16px 48px;max-width:920px;line-height:1.8}
 .md table{border-collapse:collapse}.md td,.md th{border:1px solid var(--bd);padding:4px 8px}
 .md pre{background:var(--panel);padding:10px;overflow:auto;border-radius:6px}.md code{font-size:12px}
+.md pre.fm{background:var(--chip);color:var(--sub);font-size:12px;line-height:1.6;white-space:pre-wrap;margin:8px 0 20px}
 .md img{max-width:100%;border:1px solid var(--bd);border-radius:4px}
 .img{padding:16px 32px}.img img{max-width:100%;border:1px solid var(--bd);border-radius:4px}
 pre.raw{margin:0;padding:8px 32px;line-height:1.7;font-size:12px;white-space:pre-wrap;word-break:break-all}
@@ -793,7 +794,9 @@ async function show(s,opt={}){
   if(view==='file'&&canView){
     if(IMG.test(s.path)) html=`<div class="img"><img src="/api/raw?${q}&t=${Date.now()}"></div>`;
     else{
-      const [t,d]=await Promise.all([fetch('/api/raw?'+q).then(r=>r.text()), f.untracked?null:fetch('/api/diff?'+dq).then(r=>r.json())]);
+      // 色を付けるのは「まだ見ていない変更」だけ。全部 staged 済みなら付けない。ベースと比べて丸ごと新しいファイルも、全体が塗られるだけなので付けない
+      const hl=!f.untracked&&f.sx!=='all'&&(eff==='stage'||f.st!=='A');
+      const [t,d]=await Promise.all([fetch('/api/raw?'+q).then(r=>r.text()), hl?fetch('/api/diff?'+dq).then(r=>r.json()):null]);
       const chg=d?addedLines(d.diff):new Set();
       html=MD.test(s.path)&&window.marked?`<div class="md">${mdMarked(t,chg)}</div>`:`<pre class="raw">${t.split('\n').map((l,i)=>`<span class="ln${chg.has(i+1)?' chg':''}">${esc(l)||' '}</span>`).join('')}</pre>`;
     }
@@ -823,8 +826,15 @@ function addedLines(text){ // 差分から「今のファイルで変わった�
   return set;
 }
 function mdMarked(t,chg){ // md を整形しつつ、変わった行を含むかたまりに色を付ける
-  if(!chg.size) return marked.parse(t);
-  const toks=marked.lexer(t); let ln=1, out='';
+  let ln=1, out='';
+  const fm=t.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/); // 先頭のメタ情報（front matter）はそのままの文字で出す
+  if(fm){
+    const n=(fm[0].match(/\n/g)||[]).length; let hit=false; for(let i=1;i<=n;i++) if(chg.has(i)){ hit=true; break; }
+    const h=`<pre class="fm">${esc(fm[0].replace(/^---\r?\n|\r?\n---\r?\n$/g,''))}</pre>`;
+    out+=hit?`<div class="chg">${h}</div>`:h; ln+=n; t=t.slice(fm[0].length);
+  }
+  if(!chg.size) return out+marked.parse(t);
+  const toks=marked.lexer(t);
   for(const tk of toks){
     const raw=tk.raw||'', body=raw.replace(/\n+$/,''), n=body?body.split('\n').length:0;
     let hit=false; for(let i=ln;i<ln+n;i++) if(chg.has(i)){ hit=true; break; }
