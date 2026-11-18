@@ -1,0 +1,6 @@
+# 個人の設定は ~/.config/gtree に置く。ここに置いた場合も公開しない
+config.json
+icons/
+.claude/
+__pycache__/
+.DS_Store

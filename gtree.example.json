@@ -1,0 +1,7 @@
+{
+  "repos": [
+    "~/dev/app",
+    { "path": "~/dev/api", "color": "#f2b51d" },
+    { "path": "~/dev/docs", "color": "#9a7ad8", "icon": "~/.config/gtree/icons/logo.svg", "recolor": { "#3cadba": "#9a7ad8" } }
+  ]
+}
