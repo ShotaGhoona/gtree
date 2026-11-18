@@ -547,6 +547,11 @@ async function load(manual){
       const keys=new Map(); for(const r of DATA) for(const w of r.worktrees) for(const f of w.files) keys.set(w.path+'::'+f.path,f.add+'/'+f.del+'/'+f.kind);
       if(prevKeys&&!first){ for(const [k,v] of keys) if(prevKeys.get(k)!==v) freshKeys.add(k); }
       prevKeys=keys; loadedDirs={}; render();
+      if(first){ // ?open=パス&branch=ブランチ で最初に開くファイルを指定できる
+        const q=new URLSearchParams(location.search), op=q.get('open'), br=q.get('branch');
+        if(op){ const r=[...document.querySelectorAll('.row[data-key]')].find(x=>{const i=INFO[x.dataset.p]; return i&&i.path===op&&(!br||i.branch===br);});
+          if(r){ sel=null; r.click(); return; } }
+      }
       if(sel){ const wt=DATA.flatMap(r=>r.worktrees.map(w=>({...w,repo:r.name}))).find(w=>w.path===sel.wt);
         const f=wt&&wt.files.find(x=>x.path===sel.path); if(f) sel.f={...f}; show(sel,{keep:!first}); }
     }
