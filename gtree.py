@@ -236,8 +236,10 @@ def collect():
                 st = (xy.replace(" ", "") or "M")[0]
                 a, d = ns.get(f, ("", ""))
                 prev = files.get(f)
+                # sx: staged の状態。all = 全部 staged 済み、more = staged の後にさらに変更あり
+                sx = "" if xy[0] == " " else ("more" if xy[1] != " " else "all")
                 files[f] = {"path": f, "st": prev["st"] if prev and prev["st"] == "A" else st,
-                            "kind": "both" if prev else "wip", "add": a, "del": d}
+                            "kind": "both" if prev else "wip", "add": a, "del": d, "sx": sx}
             # 新規フォルダの中身の数
             for f in untracked:
                 if f.endswith("/"):
@@ -283,11 +285,13 @@ def safe_target(wt, f):
     return real, full, info
 
 
-def file_diff(wt, f, untracked):
+def file_diff(wt, f, untracked, mode=""):
     real, full, info = safe_target(wt, f)
     if real is None:
         return None
-    if untracked:
+    if mode == "stage":  # staged の版 → 今のファイル
+        out = git(real, "diff", "--", f)
+    elif untracked:
         out = git(real, "diff", "--no-index", "--", "/dev/null", f, ok=(0, 1))
     else:
         out = git(real, "diff", info["mb"] or "HEAD", "--", f)
@@ -295,6 +299,27 @@ def file_diff(wt, f, untracked):
     truncated = len(lines) > MAX_DIFF_LINES
     return {"diff": "\n".join(lines[:MAX_DIFF_LINES]), "truncated": truncated,
             "base": info["base"], "exists": os.path.isfile(full)}
+
+
+def stage(wt, files, op):
+    """git に書き込むのはここだけ。add（staged にする）と restore --staged（外す）のみ。"""
+    real = None
+    paths = []
+    for f in files:
+        r, _, _ = safe_target(wt, f)
+        if r is None or not f or f.startswith("-"):
+            return False
+        real = r
+        paths.append(f)
+    if real is None:
+        return False
+    if op == "add":
+        git(real, "add", "-A", "--", *paths)
+    elif op == "unstage":
+        git(real, "restore", "--staged", "--", *paths)
+    else:
+        return False
+    return True
 
 
 def list_untracked(wt, d):
@@ -319,7 +344,42 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def trusted(self, write=False):
+        """別のサイトからの要求（DNS リバインディングや、勝手な POST）を断る。"""
+        port = self.server.server_address[1]
+        hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        if self.headers.get("Host") not in hosts:
+            return False
+        if write:
+            if self.headers.get("Origin") not in {"http://" + h for h in hosts}:
+                return False
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return False
+        return True
+
+    def do_POST(self):
+        if not self.trusted(write=True):
+            return self.send(403, "forbidden", "text/plain")
+        if urlparse(self.path).path != "/api/stage":
+            return self.send(404, "not found", "text/plain")
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            body = json.loads(self.rfile.read(min(n, 1 << 20)) or b"{}")
+            items = body["items"]  # [{wt, f}]
+            op = body["op"]
+        except (ValueError, KeyError, TypeError):
+            return self.send(400, "{}")
+        by_wt = {}
+        for it in items:
+            by_wt.setdefault(it.get("wt", ""), []).append(it.get("f", ""))
+        for wt, fs in by_wt.items():
+            if not stage(wt, fs, op):
+                return self.send(400, "{}")
+        return self.send(200, json.dumps({"ok": True}))
+
     def do_GET(self):
+        if not self.trusted():
+            return self.send(403, "forbidden", "text/plain")
         u = urlparse(self.path)
         q = {k: v[0] for k, v in parse_qs(u.query).items()}
         if u.path == "/":
@@ -327,7 +387,7 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/tree":
             return self.send(200, json.dumps({"repos": refresh()}, ensure_ascii=False))
         if u.path == "/api/diff":
-            r = file_diff(q.get("wt", ""), q.get("f", ""), q.get("u") == "1")
+            r = file_diff(q.get("wt", ""), q.get("f", ""), q.get("u") == "1", q.get("m", ""))
             return self.send(200, json.dumps(r, ensure_ascii=False)) if r else self.send(404, "{}")
         if u.path == "/api/icon":
             svg = next((r["icon"] for r in REPOS if os.path.basename(r["path"]) == q.get("r")), "")
@@ -454,6 +514,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 #cmenu .mh{font-size:11px;color:var(--mu);padding:4px 10px 6px}
 #cmenu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;border:0;background:transparent;color:var(--fg);text-align:left;padding:6px 10px;border-radius:5px;cursor:pointer;font:inherit}
 #cmenu button:hover{background:var(--hover2)}
+#cmenu .sep{height:1px;background:var(--bd);margin:4px 6px}
 #cmenu .ex{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--mu);max-width:390px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(10px);background:var(--fg);color:var(--bg);padding:7px 14px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:.18s}
 #toast.on{opacity:1;transform:translateX(-50%)}
@@ -467,6 +528,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .badge{font-size:10px;border-radius:4px;padding:0 4px;background:var(--chip);color:var(--sub);margin-left:4px;flex:none;font-family:-apple-system,sans-serif}
 .badge.w{background:var(--chip-amber);color:var(--chip-amberfg)}
 .wd{width:6px;height:6px;border-radius:50%;background:#e0a030;flex:none;margin-left:6px}
+.wd.ok{background:transparent;box-shadow:inset 0 0 0 1.5px var(--mu)}
+.stg{height:28px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer;font:inherit;font-size:12px;padding:0 10px;display:flex;align-items:center;gap:6px;flex:none}
+.stg:hover{background:var(--hover)}
+.stg.pri{background:#3cadba;border-color:#3cadba;color:#fff}.stg.pri:hover{filter:brightness(.95)}
+.vs+.stg{margin-left:4px}
+.md .chg{background:rgba(224,160,48,.12);box-shadow:-12px 0 0 rgba(224,160,48,.12),-14px 0 0 #e0a030;border-radius:2px}
+pre.raw .ln{display:block}pre.raw .ln.chg{background:rgba(224,160,48,.14);box-shadow:-3px 0 0 #e0a030}
 .new{box-shadow:inset 2px 0 0 #e0a030}
 .drag{position:absolute;top:0;bottom:0;left:calc(var(--lw,340px) - 3px);width:6px;z-index:5;cursor:col-resize}.drag:hover{background:var(--bd)}
 .main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
@@ -536,7 +604,7 @@ const COLORS=['#3cadba','#f2b51d','#9a7ad8','#2f6fb0','#d16ba5'];
 const BRANCH='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.6"/><circle cx="4" cy="12.5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><path d="M4 5.1v5.8M12 6.6c0 3-8 1.5-8 4.3"/></svg>';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let DATA=null, _v0=LS.get('gt.view','split'), RAW='', sel=LS.get('gt.sel',null), closed=new Set(LS.get('gt.closed',[])), loadedDirs={},
-    view=_v0==='file'?'diff':_v0, filter=LS.get('gt.filter','all'), lastAt=0, busy=false, prevKeys=null, freshKeys=new Set();
+    view=_v0==='file'?'diff':_v0, cmp=LS.get('gt.cmp','stage'), filter=LS.get('gt.filter','all'), lastAt=0, busy=false, prevKeys=null, freshKeys=new Set();
 
 async function load(manual){
   if(busy) return; busy=true; $('#dot').classList.add('busy');
@@ -544,7 +612,7 @@ async function load(manual){
     const txt=await (await fetch('/api/tree')).text(); lastAt=Date.now();
     if(txt!==RAW){
       const first=!RAW; RAW=txt; DATA=JSON.parse(txt).repos;
-      const keys=new Map(); for(const r of DATA) for(const w of r.worktrees) for(const f of w.files) keys.set(w.path+'::'+f.path,f.add+'/'+f.del+'/'+f.kind);
+      const keys=new Map(); for(const r of DATA) for(const w of r.worktrees) for(const f of w.files) keys.set(w.path+'::'+f.path,f.add+'/'+f.del+'/'+f.kind+'/'+(f.sx||''));
       if(prevKeys&&!first){ for(const [k,v] of keys) if(prevKeys.get(k)!==v) freshKeys.add(k); }
       prevKeys=keys; loadedDirs={}; render();
       if(first){ // ?open=パス&branch=ブランチ で最初に開くファイルを指定できる
@@ -620,11 +688,11 @@ document.addEventListener('contextmenu',e=>{
   closeMenu(); const list=selected(), first=list[0], hasRemote=list.some(i=>i.remote);
   const m=el('div'); m.id='cmenu';
   const item=(k,label)=>`<button data-k="${k}"><span>${label}</span><span class="ex">${esc(fmt(first,k)||'')}</span></button>`;
-  m.innerHTML=`<div class="mh">${list.length}件を選択中</div>${item('repo','リポジトリ名からのパス')}${item('rel','相対パス')}${item('abs','絶対パス')}${hasRemote?item('remote','リモートの URL'):''}`;
+  m.innerHTML=`<div class="mh">${list.length}件を選択中</div>${item('repo','リポジトリ名からのパス')}${item('rel','相対パス')}${item('abs','絶対パス')}${hasRemote?item('remote','リモートの URL'):''}<div class="sep"></div><button data-op="add"><span>staged にする（s）</span></button><button data-op="unstage"><span>staged を外す</span></button>`;
   document.body.append(m);
   const w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.min(e.clientX,innerWidth-w-8)+'px'; m.style.top=Math.min(e.clientY,innerHeight-h-8)+'px';
-  m.querySelectorAll('button').forEach(b=>b.onclick=()=>{ copy(b.dataset.k); closeMenu(); });
+  m.querySelectorAll('button').forEach(b=>b.onclick=()=>{ b.dataset.op?stageOp(b.dataset.op):copy(b.dataset.k); closeMenu(); });
 });
 document.addEventListener('mousedown',e=>{ if(!e.target.closest('#cmenu')) closeMenu(); });
 document.addEventListener('keydown',e=>{
@@ -665,7 +733,7 @@ function renderDir(box,wt,node,depth,prefix){
     if(!passFilter(ff)) continue;
     const key=wt.path+'::'+path;
     const stat=f.add&&f.add!=='-'?`<span class="cnt"><span class="st-A">+${f.add}</span> <span class="st-D">−${f.del}</span></span>`:'<span class="cnt"></span>';
-    const tag=f.kind!=='commit'?'<span class="wd" title="未コミットの変更あり"></span>':'';
+    const tag=f.kind==='commit'?'':f.sx==='all'?'<span class="wd ok" title="staged 済み（確認済み）"></span>':'<span class="wd" title="まだ staged していない変更あり"></span>';
     box.append(row(depth,`<span class="tw"></span><span class="nm st-${f.st}" title="${ST[f.st]||''}">${esc(f.name)}</span>${tag}${stat}`,
       (sel&&sel.key===key?'sel ':'')+(freshKeys.has(key)?'new':''),key,()=>{freshKeys.delete(key); show({key,wt:wt.path,path,f:ff,repo:wt._repo,branch:wt.branch},{scroll:true});},{wt:wt.path,repo:wt._repo,branch:wt.branch,remote:wt._remote,path,dir:false}));
   }
@@ -705,27 +773,32 @@ async function show(s,opt={}){
   const r=document.querySelector(`.row[data-key="${CSS.escape(s.key)}"]`); r?.classList.add('sel');
   if(opt.scroll) r?.scrollIntoView({block:'nearest'});
   const f=s.f, canView=f.st!=='D';
-  const kind={commit:'commit済',wip:f.untracked?'新規（未追跡）':'未コミット',both:'commit済 + 未コミット'}[f.kind];
+  const kind={commit:'commit済',wip:f.untracked?'新規（未追跡）':'未コミット',both:'commit済 + 未コミット'}[f.kind]+(f.sx==='all'?' · staged 済み':f.sx==='more'?' · staged の後に変更あり':'');
+  const eff=f.sx==='more'&&cmp==='stage'?'stage':'base';
+  const canStage=f.kind!=='commit'&&f.sx!=='all', canUnstage=!!f.sx;
   const stat=f.add&&f.add!=='-'?`<span class="st-A">+${f.add}</span> <span class="st-D">−${f.del}</span>`:'';
   const head=$('#head'); head.hidden=false;
   head.innerHTML=`<div class="crumb">${esc(s.repo||'')} <span>›</span> ${BRANCH} ${esc(s.branch||'')}</div>
    <div class="line2"><span class="p st-${f.st}" title="${esc((ST[f.st]||'')+'：'+s.path)}"><span dir="ltr">${esc(s.path)}</span></span>${stat}<span class="crumb">${kind}</span>
-   <span class="vs"><button data-m="diff" class="${view==='diff'?'on':''}">1列</button><button data-m="split" class="${view==='split'?'on':''}">左右</button>${canView?`<button data-m="file" class="${view==='file'?'on':''}">ファイル全体</button>`:''}</span></div>`;
-  head.querySelectorAll('.vs button').forEach(b=>b.onclick=()=>{view=b.dataset.m; LS.set('gt.view',view); show(sel)});
+   ${f.sx==='more'?`<span class="vs cmp" style="margin-left:auto" title="何と比べるか"><button data-c="stage" class="${eff==='stage'?'on':''}" title="staged した版から、その後の変更だけ">staged から</button><button data-c="base" class="${eff==='base'?'on':''}" title="ベースブランチからの変更すべて">ベースから</button></span>`:''}<span class="vs mode"${f.sx==='more'?' style="margin-left:0"':''}><button data-m="diff" class="${view==='diff'?'on':''}">1列</button><button data-m="split" class="${view==='split'?'on':''}">左右</button>${canView?`<button data-m="file" class="${view==='file'?'on':''}">ファイル全体</button>`:''}</span>${canStage?`<button class="stg pri" data-op="add" title="確認済みの印として staged にする（s）">staged にする</button>`:''}${canUnstage&&!canStage?`<button class="stg" data-op="unstage" title="staged を外す">staged を外す</button>`:''}</div>`;
+  head.querySelectorAll('.vs.mode button').forEach(b=>b.onclick=()=>{view=b.dataset.m; LS.set('gt.view',view); show(sel)});
+  head.querySelectorAll('.vs.cmp button').forEach(b=>b.onclick=()=>{cmp=b.dataset.c; LS.set('gt.cmp',cmp); show(sel)});
+  head.querySelectorAll('.stg').forEach(b=>b.onclick=()=>stageOp(b.dataset.op));
   const body=$('#body'), keepTop=opt.keep?body.scrollTop:0;
   const q=new URLSearchParams({wt:s.wt,f:s.path});
   let html;
+  const dq=new URLSearchParams(q); if(f.untracked) dq.set('u','1'); if(eff==='stage') dq.set('m','stage');
   if(view==='file'&&canView){
     if(IMG.test(s.path)) html=`<div class="img"><img src="/api/raw?${q}&t=${Date.now()}"></div>`;
     else{
-      const t=await (await fetch('/api/raw?'+q)).text();
-      html=MD.test(s.path)&&window.marked?`<div class="md">${marked.parse(t)}</div>`:`<pre class="raw">${esc(t)}</pre>`;
+      const [t,d]=await Promise.all([fetch('/api/raw?'+q).then(r=>r.text()), f.untracked?null:fetch('/api/diff?'+dq).then(r=>r.json())]);
+      const chg=d?addedLines(d.diff):new Set();
+      html=MD.test(s.path)&&window.marked?`<div class="md">${mdMarked(t,chg)}</div>`:`<pre class="raw">${t.split('\n').map((l,i)=>`<span class="ln${chg.has(i+1)?' chg':''}">${esc(l)||' '}</span>`).join('')}</pre>`;
     }
   } else if(IMG.test(s.path)&&canView){
     html=`<div class="img"><img src="/api/raw?${q}&t=${Date.now()}"></div>`;
   } else {
-    if(f.untracked) q.set('u','1');
-    const d=await (await fetch('/api/diff?'+q)).json();
+    const d=await (await fetch('/api/diff?'+dq)).json();
     html=(view==='split'?diffSplit(d.diff):diffTable(d.diff))+(d.truncated?'<div class="empty">長いので途中で切っています</div>':'');
   }
   if(sel!==s) return;
@@ -737,6 +810,34 @@ async function show(s,opt={}){
     img.src='/api/raw?'+new URLSearchParams({wt:s.wt,f:parts.join('/')});
   });
   body.scrollTop=keepTop;
+}
+function addedLines(text){ // 差分から「今のファイルで変わった行」の行番号を集める
+  const set=new Set(); let n=0;
+  for(const l of (text||'').split('\n')){
+    const m=l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/); if(m){ n=+m[1]; continue; }
+    if(/^(diff --git|index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|\\)/.test(l)) continue;
+    if(l[0]==='+'){ set.add(n++); } else if(l[0]===' ') n++;
+  }
+  return set;
+}
+function mdMarked(t,chg){ // md を整形しつつ、変わった行を含むかたまりに色を付ける
+  if(!chg.size) return marked.parse(t);
+  const toks=marked.lexer(t); let ln=1, out='';
+  for(const tk of toks){
+    const raw=tk.raw||'', body=raw.replace(/\n+$/,''), n=body?body.split('\n').length:0;
+    let hit=false; for(let i=ln;i<ln+n;i++) if(chg.has(i)){ hit=true; break; }
+    const one=[tk]; one.links=toks.links; const h=marked.parser(one);
+    out+=hit?`<div class="chg">${h}</div>`:h;
+    ln+=(raw.match(/\n/g)||[]).length;
+  }
+  return out;
+}
+async function stageOp(op){
+  let list=msel.size>1?selected():sel?[{wt:sel.wt,path:sel.path}]:[];
+  if(!list.length) return;
+  const r=await fetch('/api/stage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,items:list.map(i=>({wt:i.wt,f:i.path}))})});
+  toast(r.ok?(op==='add'?`${list.length}件を staged にしました`:`${list.length}件の staged を外しました`):'失敗しました');
+  RAW=''; await load();
 }
 function diffSplit(text){
   if(!text||!text.trim()) return '<div class="empty">差分はありません（バイナリか、空ファイルです）</div>';
@@ -786,6 +887,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='k'||e.key==='ArrowUp'){step(-1);e.preventDefault()}
   if(e.key==='/'){$('#q').focus();e.preventDefault()}
   if(e.key==='r'){RAW='';load()}
+  if(e.key==='s'&&!e.metaKey&&!e.ctrlKey){stageOp('add')}
 });
 $('#q').addEventListener('input',render);
 $('#seg').querySelectorAll('button').forEach(b=>{
