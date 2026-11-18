@@ -314,12 +314,13 @@ def stage(wt, files, op):
     if real is None:
         return False
     if op == "add":
-        git(real, "add", "-A", "--", *paths)
-    elif op == "unstage":
-        git(real, "restore", "--staged", "--", *paths)
+        cmd = ["add", "-A", "--", *paths]
+    elif op == "unstage":  # restore --staged は未追跡のパスが1つでも混じると全体が失敗するので reset を使う
+        cmd = ["reset", "-q", "--", *paths]
     else:
         return False
-    return True
+    r = subprocess.run(["git", "-C", real, *cmd], capture_output=True)
+    return r.returncode == 0
 
 
 def list_untracked(wt, d):
@@ -784,7 +785,7 @@ async function show(s,opt={}){
    ${f.sx==='more'?`<span class="vs cmp" style="margin-left:auto" title="何と比べるか"><button data-c="stage" class="${eff==='stage'?'on':''}" title="staged した版から、その後の変更だけ">staged から</button><button data-c="base" class="${eff==='base'?'on':''}" title="ベースブランチからの変更すべて">ベースから</button></span>`:''}<span class="vs mode"${f.sx==='more'?' style="margin-left:0"':''}><button data-m="diff" class="${view==='diff'?'on':''}">1列</button><button data-m="split" class="${view==='split'?'on':''}">左右</button>${canView?`<button data-m="file" class="${view==='file'?'on':''}">ファイル全体</button>`:''}</span>${canStage?`<button class="stg pri" data-op="add" title="確認済みの印として staged にする（s）">staged にする</button>`:''}${canUnstage&&!canStage?`<button class="stg" data-op="unstage" title="staged を外す">staged を外す</button>`:''}</div>`;
   head.querySelectorAll('.vs.mode button').forEach(b=>b.onclick=()=>{view=b.dataset.m; LS.set('gt.view',view); show(sel)});
   head.querySelectorAll('.vs.cmp button').forEach(b=>b.onclick=()=>{cmp=b.dataset.c; LS.set('gt.cmp',cmp); show(sel)});
-  head.querySelectorAll('.stg').forEach(b=>b.onclick=()=>stageOp(b.dataset.op));
+  head.querySelectorAll('.stg').forEach(b=>b.onclick=()=>stageOp(b.dataset.op,'head'));
   const body=$('#body'), keepTop=opt.keep?body.scrollTop:0;
   const q=new URLSearchParams({wt:s.wt,f:s.path});
   let html;
@@ -833,8 +834,9 @@ function mdMarked(t,chg){ // md を整形しつつ、変わった行を含むか
   }
   return out;
 }
-async function stageOp(op){
-  let list=msel.size>1?selected():sel?[{wt:sel.wt,path:sel.path}]:[];
+async function stageOp(op,src){
+  // 右クリックと s キーは左で選んでいるもの（フォルダを含む）、見出しのボタンは開いているファイルが対象
+  let list=src==='head'&&msel.size<=1?(sel?[{wt:sel.wt,path:sel.path}]:[]):selected();
   if(!list.length) return;
   const r=await fetch('/api/stage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,items:list.map(i=>({wt:i.wt,f:i.path}))})});
   toast(r.ok?(op==='add'?`${list.length}件を staged にしました`:`${list.length}件の staged を外しました`):'失敗しました');
