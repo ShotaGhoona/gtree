@@ -528,7 +528,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .badge{font-size:10px;border-radius:4px;padding:0 4px;background:var(--chip);color:var(--sub);margin-left:4px;flex:none;font-family:-apple-system,sans-serif}
 .badge.w{background:var(--chip-amber);color:var(--chip-amberfg)}
 .wd{width:6px;height:6px;border-radius:50%;background:#e0a030;flex:none;margin-left:6px}
-.wd.ok{background:#5b8def}
+.wd.ok{background:#5b8def}.wd.cm{background:#a68cd9}
+.tw:has(.wd){display:flex;align-items:center;justify-content:center;align-self:stretch}.tw .wd{margin:0}
 .stg{height:28px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer;font:inherit;font-size:12px;padding:0 10px;display:flex;align-items:center;gap:6px;flex:none}
 .stg:hover{background:var(--hover)}
 .stg.pri{background:#3cadba;border-color:#3cadba;color:#fff}.stg.pri:hover{filter:brightness(.95)}
@@ -733,8 +734,8 @@ function renderDir(box,wt,node,depth,prefix){
     if(!passFilter(ff)) continue;
     const key=wt.path+'::'+path;
     const stat=f.add&&f.add!=='-'?`<span class="cnt"><span class="st-A">+${f.add}</span> <span class="st-D">−${f.del}</span></span>`:'<span class="cnt"></span>';
-    const tag=f.kind==='commit'?'':f.sx==='all'?'<span class="wd ok" title="staged 済み（確認済み）"></span>':'<span class="wd" title="まだ staged していない変更あり"></span>';
-    box.append(row(depth,`<span class="tw"></span><span class="nm st-${f.st}" title="${ST[f.st]||''}">${esc(f.name)}</span>${tag}${stat}`,
+    const tag=f.kind==='commit'?'<span class="wd cm" title="commit 済み"></span>':f.sx==='all'?'<span class="wd ok" title="staged 済み（確認済み）"></span>':'<span class="wd" title="まだ staged していない変更あり"></span>';
+    box.append(row(depth,`<span class="tw">${tag}</span><span class="nm st-${f.st}" title="${ST[f.st]||''}">${esc(f.name)}</span>${stat}`,
       (sel&&sel.key===key?'sel ':'')+(freshKeys.has(key)?'new':''),key,()=>{freshKeys.delete(key); show({key,wt:wt.path,path,f:ff,repo:wt._repo,branch:wt.branch},{scroll:true});},{wt:wt.path,repo:wt._repo,branch:wt.branch,remote:wt._remote,path,dir:false}));
   }
 }
