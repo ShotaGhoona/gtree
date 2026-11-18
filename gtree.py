@@ -16,6 +16,7 @@
     このブランチで足したコミットの変更（merge-base..HEAD）
 をまとめて 1 本のツリーにする。git に書き込む操作は一切しない。
 """
+import base64
 import json
 import mimetypes
 import re
@@ -25,7 +26,7 @@ import sys
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 MAX_DIFF_LINES = 6000
 HOME = os.path.expanduser("~")
@@ -336,12 +337,15 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
-    def send(self, code, body, ctype="application/json; charset=utf-8"):
+    def send(self, code, body, ctype="application/json; charset=utf-8", sandbox=False):
         data = body if isinstance(body, bytes) else body.encode()
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        if sandbox:
+            # リポジトリの HTML や SVG を、GTREE とは別のサイトとして動かす（中のスクリプトから staged などを操作させない）
+            self.send_header("Content-Security-Policy", "sandbox allow-scripts allow-forms allow-popups allow-modals")
         self.end_headers()
         self.wfile.write(data)
 
@@ -397,16 +401,28 @@ class Handler(BaseHTTPRequestHandler):
             r = list_untracked(q.get("wt", ""), q.get("d", ""))
             return self.send(200, json.dumps(r, ensure_ascii=False)) if r is not None else self.send(404, "[]")
         if u.path == "/api/raw":
-            real, full, _ = safe_target(q.get("wt", ""), q.get("f", ""))
-            if not real or not os.path.isfile(full):
+            return self.raw(q.get("wt", ""), q.get("f", ""))
+        if u.path.startswith("/raw/"):
+            # /raw/<worktree のパスを base64url にしたもの>/<ファイルのパス>
+            # パスの形にしておくと、HTML の中の相対パス（style.css や img/a.png）がそのまま読める
+            key, _, f = u.path[len("/raw/"):].partition("/")
+            try:
+                wt = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4)).decode()
+            except ValueError:
                 return self.send(404, "not found", "text/plain")
-            with open(full, "rb") as fh:
-                data = fh.read()
-            ctype = mimetypes.guess_type(full)[0] or "text/plain; charset=utf-8"
-            if ctype.startswith("text/") and "charset" not in ctype:
-                ctype += "; charset=utf-8"
-            return self.send(200, data, ctype)
+            return self.raw(wt, unquote(f))
         self.send(404, "not found", "text/plain")
+
+    def raw(self, wt, f):
+        real, full, _ = safe_target(wt, f)
+        if not real or not os.path.isfile(full):
+            return self.send(404, "not found", "text/plain")
+        with open(full, "rb") as fh:
+            data = fh.read()
+        ctype = mimetypes.guess_type(full)[0] or "text/plain; charset=utf-8"
+        if ctype.startswith("text/") and "charset" not in ctype:
+            ctype += "; charset=utf-8"
+        return self.send(200, data, ctype, sandbox=ctype.startswith(("text/html", "image/svg")))
 
 
 def serve(port):
@@ -571,6 +587,7 @@ table.s td.n:nth-child(3){border-left:1px solid var(--bd)}
 .md pre{background:var(--panel);padding:10px;overflow:auto;border-radius:6px}.md code{font-size:12px}
 .md pre.fm{background:var(--chip);color:var(--sub);font-size:12px;line-height:1.6;white-space:pre-wrap;margin:8px 0 20px}
 .md img{max-width:100%;border:1px solid var(--bd);border-radius:4px}
+.body:has(.htmlv){overflow:hidden}.htmlv{display:block;width:100%;height:100%;border:0;background:#fff}
 .img{padding:16px 32px}.img img{max-width:100%;border:1px solid var(--bd);border-radius:4px}
 pre.raw{margin:0;padding:8px 32px;line-height:1.7;font-size:12px;white-space:pre-wrap;word-break:break-all}
 </style></head><body>
@@ -601,7 +618,8 @@ pre.raw{margin:0;padding:8px 32px;line-height:1.7;font-size:12px;white-space:pre
 <script>
 const $=s=>document.querySelector(s);
 const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-const IMG=/\.(png|jpe?g|gif|webp|svg)$/i, MD=/\.mdx?$/i;
+const IMG=/\.(png|jpe?g|gif|webp|svg)$/i, MD=/\.mdx?$/i, HTML=/\.html?$/i;
+const rawPath=(wt,f)=>'/raw/'+btoa(unescape(encodeURIComponent(wt))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')+'/'+f.split('/').map(encodeURIComponent).join('/');
 const ST={A:'追加（新しいファイル）',M:'変更',D:'削除',R:'名前の変更'};
 const COLORS=['#3cadba','#f2b51d','#9a7ad8','#2f6fb0','#d16ba5'];
 const BRANCH='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.6"/><circle cx="4" cy="12.5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><path d="M4 5.1v5.8M12 6.6c0 3-8 1.5-8 4.3"/></svg>';
@@ -789,10 +807,17 @@ async function show(s,opt={}){
   head.querySelectorAll('.stg').forEach(b=>b.onclick=()=>stageOp(b.dataset.op,'head'));
   const body=$('#body'), keepTop=opt.keep?body.scrollTop:0;
   const q=new URLSearchParams({wt:s.wt,f:s.path});
-  let html;
+  let html, keepFrame=false;
   const dq=new URLSearchParams(q); if(f.untracked) dq.set('u','1'); if(eff==='stage') dq.set('m','stage');
   if(view==='file'&&canView){
     if(IMG.test(s.path)) html=`<div class="img"><img src="/api/raw?${q}&t=${Date.now()}"></div>`;
+    else if(HTML.test(s.path)){
+      // 別のサイトとして動かす（sandbox）。中身が変わったときだけ読み込み直して、スクロール位置を保つ
+      const t=await fetch('/api/raw?'+q).then(r=>r.text()), fr=body.querySelector('iframe.htmlv');
+      keepFrame=opt.keep&&fr&&fr.dataset.key===s.key&&fr._t===t;
+      html=`<iframe class="htmlv" sandbox="allow-scripts allow-forms allow-popups allow-modals" data-key="${esc(s.key)}" src="${rawPath(s.wt,s.path)}?t=${Date.now()}"></iframe>`;
+      body._t=t;
+    }
     else{
       // 色を付けるのは「まだ見ていない変更」だけ。全部 staged 済みなら付けない。ベースと比べて丸ごと新しいファイルも、全体が塗られるだけなので付けない
       const hl=!f.untracked&&f.sx!=='all'&&(eff==='stage'||f.st!=='A');
@@ -806,8 +831,9 @@ async function show(s,opt={}){
     const d=await (await fetch('/api/diff?'+dq)).json();
     html=(view==='split'?diffSplit(d.diff):diffTable(d.diff))+(d.truncated?'<div class="empty">長いので途中で切っています</div>':'');
   }
-  if(sel!==s) return;
+  if(sel!==s||keepFrame) return;
   body.innerHTML=html;
+  const fr=body.querySelector('iframe.htmlv'); if(fr) fr._t=body._t;
   const dir=s.path.includes('/')?s.path.slice(0,s.path.lastIndexOf('/')+1):'';
   body.querySelectorAll('.md img').forEach(img=>{
     const src=img.getAttribute('src')||''; if(/^(https?:|data:|\/)/.test(src)) return;
