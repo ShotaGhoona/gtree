@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" font-family="-apple-system, 'Hiragino Sans', 'Segoe UI', sans-serif" font-size="13">
+<!--
+  README 用の GTREE の画面イメージ（架空のデータ）。手で書いた SVG なので、文字や行をそのまま書き換えて直せます。
+  色は gtree.py の CSS と同じ。ダークモードにも対応しています。
+  1行の高さ：サイドバー 26px、差分 22px。
+-->
+<style>
+  .bg{fill:#fff} .panel{fill:#fbfbfa} .bd{stroke:#ebeae7} .fg{fill:#37352f} .sub{fill:#73726e} .mu{fill:#9b9a97}
+  .chip{fill:#f1f0ec} .amber{fill:#fbf0dc} .amberfg{fill:#8a5a0b} .sel{fill:#e7f0fa}
+  .A{fill:#2f6b12} .M{fill:#9a6400} .add{fill:#edf6e8} .del{fill:#fcecec} .delfg{fill:#b03a3a} .hunk{fill:#f4f3f0}
+  .t1{fill:#eaf4f4} .t2{fill:#faf5e6} .t3{fill:#f2eff7} .lg{stroke:#fbfbfa}
+  .mono, .mono text{font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre}
+  .b{font-weight:600}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#191919} .panel{fill:#202020} .bd{stroke:#2f2f2f} .fg{fill:#e6e5e1} .sub{fill:#a5a49f} .mu{fill:#7d7c78}
+    .chip{fill:#2c2c2b} .amber{fill:#3b2e15} .amberfg{fill:#f2c46d} .sel{fill:#18324d}
+    .A{fill:#97c459} .M{fill:#efa634} .add{fill:#17301b} .del{fill:#3a1818} .delfg{fill:#f09595} .hunk{fill:#262625}
+    .t1{fill:#232d2e} .t2{fill:#332d20} .t3{fill:#2b2830} .lg{stroke:#202020}
+  }
+</style>
+
+<!-- 枠 -->
+<rect class="bg bd" x="0.5" y="0.5" width="1199" height="639" rx="10"/>
+<clipPath id="win"><rect x="0.5" y="0.5" width="1199" height="639" rx="10"/></clipPath>
+<g clip-path="url(#win)">
+
+<!-- ================= サイドバー ================= -->
+<rect class="panel" x="0" y="0" width="340" height="640"/>
+
+<!-- ロゴと検索 -->
+<rect class="fg" x="16" y="16" width="20" height="20" rx="5"/>
+<path d="M22.5 20.5v11M22.5 24c0 3 7 1.3 7 4.7v.8" class="lg" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="29.5" cy="30" r="1.8" fill="#3cadba"/>
+<text class="fg b" x="44" y="31" font-size="14" letter-spacing="1.5">GTREE</text>
+<circle cx="285" cy="26" r="3.5" fill="#3cadba"/><text class="mu" x="293" y="30" font-size="11">最新</text>
+<rect class="bg bd" x="16.5" y="54.5" width="232" height="27" rx="6"/>
+<text class="mu" x="26" y="72" font-size="12">絞り込み（/）</text>
+<rect class="chip" x="256" y="54" width="68" height="28" rx="6"/>
+<rect class="bg" x="258" y="56" width="20" height="24" rx="4"/>
+<text class="sub" x="263" y="72" font-size="11">≡</text><text class="mu" x="285" y="72" font-size="11">✎</text><text class="mu" x="307" y="72" font-size="11">◇</text>
+<line class="bd" x1="0" y1="96" x2="340" y2="96"/>
+
+<!-- acme-web -->
+<rect class="t1" x="0" y="96.5" width="340" height="283"/>
+<rect x="14" y="108" width="26" height="22" rx="5" fill="#3cadba"/><text x="27" y="123" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">WE</text>
+<text class="fg b" x="48" y="124" font-size="14">acme-web</text>
+<rect class="chip" x="132" y="112" width="34" height="16" rx="4"/><text class="mu" x="149" y="124" font-size="11" text-anchor="middle">main</text>
+
+<text class="mu" x="16" y="160" font-size="10">▾</text>
+<text class="sub" x="30" y="160" font-size="12">⑂</text><text class="fg b" x="44" y="160" font-size="12">main</text>
+<rect class="amber" x="294" y="148" width="32" height="16" rx="4"/><text class="amberfg" x="310" y="160" font-size="10.5" text-anchor="middle">未 1</text>
+<circle cx="40" cy="182" r="3" fill="#e0a030"/><text class="M mono" x="52" y="186">README.md</text>
+<text class="mono" x="326" y="186" text-anchor="end" font-size="11"><tspan class="A">+3</tspan> <tspan class="delfg">−1</tspan></text>
+
+<text class="mu" x="16" y="212" font-size="10">▾</text>
+<text class="mu" x="30" y="212" font-size="12">⑂</text><text class="fg b" x="44" y="212" font-size="12">feat/cart-redesign</text>
+<rect class="bg bd" x="178.5" y="200.5" width="44" height="15" rx="4"/><circle cx="187" cy="208" r="2.5" fill="#3cadba"/><text class="fg mono" x="193" y="212" font-size="10.5">:3001</text>
+<rect class="amber" x="232" y="200" width="32" height="16" rx="4"/><text class="amberfg" x="248" y="212" font-size="10.5" text-anchor="middle">未 2</text>
+<rect class="chip" x="270" y="200" width="32" height="16" rx="4"/><text class="sub" x="286" y="212" font-size="10.5" text-anchor="middle">済 3</text>
+<text class="mu" x="36" y="238" font-size="10">▾</text><text class="sub mono" x="50" y="238">src/components/cart/</text><text class="mu" x="326" y="238" text-anchor="end" font-size="11">3</text>
+<rect class="sel" x="6" y="246" width="328" height="24" rx="5"/>
+<circle cx="56" cy="258" r="3" fill="#e0a030"/><text class="M mono" x="66" y="262">CartSummary.tsx</text>
+<text class="mono" x="326" y="262" text-anchor="end" font-size="11"><tspan class="A">+24</tspan> <tspan class="delfg">−9</tspan></text>
+<circle cx="56" cy="284" r="3" fill="#5b8def"/><text class="M mono" x="66" y="288">CartItem.tsx</text>
+<text class="mono" x="326" y="288" text-anchor="end" font-size="11"><tspan class="A">+8</tspan> <tspan class="delfg">−2</tspan></text>
+<circle cx="56" cy="310" r="3" fill="#a68cd9"/><text class="A mono" x="66" y="314">CouponInput.tsx</text>
+<text class="mono" x="326" y="314" text-anchor="end" font-size="11"><tspan class="A">+41</tspan> <tspan class="delfg">−0</tspan></text>
+<circle cx="40" cy="336" r="3" fill="#a68cd9"/><text class="M mono" x="52" y="340">src/styles/cart.css</text>
+<text class="mono" x="326" y="340" text-anchor="end" font-size="11"><tspan class="A">+12</tspan> <tspan class="delfg">−4</tspan></text>
+<circle cx="40" cy="362" r="3" fill="#a68cd9"/><text class="delfg mono" x="52" y="366" text-decoration="line-through">src/legacy/OldCart.tsx</text>
+<text class="mono" x="326" y="366" text-anchor="end" font-size="11"><tspan class="A">+0</tspan> <tspan class="delfg">−88</tspan></text>
+<line class="bd" x1="0" y1="380" x2="340" y2="380"/>
+
+<!-- acme-api -->
+<rect class="t2" x="0" y="380.5" width="340" height="131"/>
+<rect x="14" y="392" width="26" height="22" rx="5" fill="#f2b51d"/><text x="27" y="407" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">AP</text>
+<text class="fg b" x="48" y="408" font-size="14">acme-api</text>
+<rect class="chip" x="126" y="396" width="34" height="16" rx="4"/><text class="mu" x="143" y="408" font-size="11" text-anchor="middle">main</text>
+<text class="mu" x="16" y="444" font-size="10">▾</text>
+<text class="mu" x="30" y="444" font-size="12">⑂</text><text class="fg b" x="44" y="444" font-size="12">feat/rate-limit</text>
+<rect class="chip" x="294" y="432" width="32" height="16" rx="4"/><text class="sub" x="310" y="444" font-size="10.5" text-anchor="middle">済 2</text>
+<circle cx="40" cy="466" r="3" fill="#a68cd9"/><text class="A mono" x="52" y="470">middleware/rateLimit.ts</text>
+<text class="mono" x="326" y="470" text-anchor="end" font-size="11"><tspan class="A">+56</tspan> <tspan class="delfg">−0</tspan></text>
+<circle cx="40" cy="492" r="3" fill="#a68cd9"/><text class="M mono" x="52" y="496">routes/orders.ts</text>
+<text class="mono" x="326" y="496" text-anchor="end" font-size="11"><tspan class="A">+6</tspan> <tspan class="delfg">−1</tspan></text>
+<line class="bd" x1="0" y1="512" x2="340" y2="512"/>
+
+<!-- acme-docs -->
+<rect class="t3" x="0" y="512.5" width="340" height="128"/>
+<rect x="14" y="524" width="26" height="22" rx="5" fill="#9a7ad8"/><text x="27" y="539" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">DO</text>
+<text class="fg b" x="48" y="540" font-size="14">acme-docs</text>
+<rect class="chip" x="140" y="528" width="34" height="16" rx="4"/><text class="mu" x="157" y="540" font-size="11" text-anchor="middle">main</text>
+<text class="mu" x="16" y="576" font-size="10">▾</text>
+<text class="mu" x="30" y="576" font-size="12">⑂</text><text class="fg b" x="44" y="576" font-size="12">docs/coupon-spec</text>
+<rect class="amber" x="294" y="564" width="32" height="16" rx="4"/><text class="amberfg" x="310" y="576" font-size="10.5" text-anchor="middle">未 1</text>
+<circle cx="40" cy="598" r="3" fill="#5b8def"/><text class="A mono" x="52" y="602">specs/coupon.md</text>
+<text class="mono" x="326" y="602" text-anchor="end" font-size="11"><tspan class="A">+73</tspan> <tspan class="delfg">−0</tspan></text>
+
+<line class="bd" x1="340" y1="0" x2="340" y2="640"/>
+
+<!-- ================= 右：見出し ================= -->
+<rect class="panel" x="340.5" y="0" width="860" height="96"/>
+<text class="mu" x="364" y="34" font-size="12">acme-web  ›  ⑂ feat/cart-redesign  ·  未コミット · staged の後に変更あり</text>
+<text class="M mono b" x="364" y="72" font-size="14">src/components/cart/CartSummary.tsx</text>
+<text class="mono" x="660" y="72" font-size="12"><tspan class="A">+24</tspan> <tspan class="delfg">−9</tspan></text>
+<!-- 比べる相手 -->
+<rect class="chip" x="724" y="54" width="158" height="28" rx="6"/>
+<rect class="bg bd" x="726.5" y="56.5" width="77" height="23" rx="4"/>
+<text class="fg" x="765" y="72" font-size="12" text-anchor="middle">staged から</text><text class="sub" x="843" y="72" font-size="12" text-anchor="middle">ベースから</text>
+<!-- 表示 -->
+<rect class="chip" x="888" y="54" width="186" height="28" rx="6"/>
+<text class="sub" x="912" y="72" font-size="12" text-anchor="middle">1列</text>
+<rect class="bg bd" x="938.5" y="56.5" width="44" height="23" rx="4"/><text class="fg" x="960" y="72" font-size="12" text-anchor="middle">左右</text>
+<text class="sub" x="1028" y="72" font-size="12" text-anchor="middle">ファイル全体</text>
+<!-- ボタン -->
+<rect x="1082" y="54" width="102" height="28" rx="6" fill="#3cadba"/><text x="1133" y="72" fill="#fff" font-size="12" text-anchor="middle">staged にする</text>
+<line class="bd" x1="340" y1="96" x2="1200" y2="96"/>
+
+<!-- ================= 右：左右の差分 ================= -->
+<rect class="hunk" x="340.5" y="96.5" width="860" height="22"/>
+<text class="mu mono" x="400" y="112" font-size="11">@@ -12,10 +12,12 @@ export function CartSummary</text>
+<line class="bd" x1="770" y1="118" x2="770" y2="640"/>
+
+<g class="mono" xml:space="preserve">
+<!-- 左（staged の版）: 番号 x=376 右寄せ、本文 x=392 / 右（今）: 番号 x=806、本文 x=822 -->
+<text class="mu" x="376" y="134" text-anchor="end">12</text><text class="fg" x="392" y="134">export function CartSummary({ items, coupon }) {</text>
+<text class="mu" x="806" y="134" text-anchor="end">12</text><text class="fg" x="822" y="134">export function CartSummary({ items, coupon }) {</text>
+<text class="mu" x="376" y="156" text-anchor="end">13</text><text class="fg" x="392" y="156">  const subtotal = sum(items.map(lineTotal));</text>
+<text class="mu" x="806" y="156" text-anchor="end">13</text><text class="fg" x="822" y="156">  const subtotal = sum(items.map(lineTotal));</text>
+
+<rect class="del" x="340.5" y="162" width="429.5" height="22"/>
+<text class="delfg" x="376" y="178" text-anchor="end">14</text><text class="delfg" x="392" y="178">  const total = subtotal - (coupon?.amount ?? 0);</text>
+<rect class="add" x="770.5" y="162" width="429.5" height="44"/>
+<text class="A" x="806" y="178" text-anchor="end">14</text><text class="A" x="822" y="178">  const discount = calcDiscount(subtotal, coupon);</text>
+<text class="A" x="806" y="200" text-anchor="end">15</text><text class="A" x="822" y="200">  const total = Math.max(subtotal - discount, 0);</text>
+
+<text class="mu" x="376" y="222" text-anchor="end">15</text><text class="fg" x="392" y="222">  return (</text>
+<text class="mu" x="806" y="222" text-anchor="end">16</text><text class="fg" x="822" y="222">  return (</text>
+<text class="mu" x="376" y="244" text-anchor="end">16</text><text class="fg" x="392" y="244">    &lt;section className="cart-summary"&gt;</text>
+<text class="mu" x="806" y="244" text-anchor="end">17</text><text class="fg" x="822" y="244">    &lt;section className="cart-summary"&gt;</text>
+
+<rect class="del" x="340.5" y="250" width="429.5" height="22"/>
+<text class="delfg" x="376" y="266" text-anchor="end">17</text><text class="delfg" x="392" y="266">      &lt;Row label="小計" value={subtotal} /&gt;</text>
+<rect class="add" x="770.5" y="250" width="429.5" height="44"/>
+<text class="A" x="806" y="266" text-anchor="end">18</text><text class="A" x="822" y="266">      &lt;Row label="小計" value={yen(subtotal)} /&gt;</text>
+<text class="A" x="806" y="288" text-anchor="end">19</text><text class="A" x="822" y="288">      {discount &gt; 0 &amp;&amp; &lt;Row label="クーポン" /&gt;}</text>
+
+<text class="mu" x="376" y="310" text-anchor="end">18</text><text class="fg" x="392" y="310">      &lt;Row label="合計" value={total} strong /&gt;</text>
+<text class="mu" x="806" y="310" text-anchor="end">20</text><text class="fg" x="822" y="310">      &lt;Row label="合計" value={total} strong /&gt;</text>
+<text class="mu" x="376" y="332" text-anchor="end">19</text><text class="fg" x="392" y="332">    &lt;/section&gt;</text>
+<text class="mu" x="806" y="332" text-anchor="end">21</text><text class="fg" x="822" y="332">    &lt;/section&gt;</text>
+<text class="mu" x="376" y="354" text-anchor="end">20</text><text class="fg" x="392" y="354">  );</text>
+<text class="mu" x="806" y="354" text-anchor="end">22</text><text class="fg" x="822" y="354">  );</text>
+<text class="mu" x="376" y="376" text-anchor="end">21</text><text class="fg" x="392" y="376">}</text>
+<text class="mu" x="806" y="376" text-anchor="end">23</text><text class="fg" x="822" y="376">}</text>
+</g>
+
+<rect class="hunk" x="340.5" y="384" width="860" height="22"/>
+<text class="mu mono" x="400" y="400" font-size="11">@@ -34,4 +36,6 @@ function calcDiscount</text>
+<g class="mono" xml:space="preserve">
+<text class="mu" x="376" y="422" text-anchor="end">34</text><text class="fg" x="392" y="422">  if (!coupon) return 0;</text>
+<text class="mu" x="806" y="422" text-anchor="end">36</text><text class="fg" x="822" y="422">  if (!coupon) return 0;</text>
+<rect class="add" x="770.5" y="428" width="429.5" height="44"/>
+<text class="A" x="806" y="444" text-anchor="end">37</text><text class="A" x="822" y="444">  if (coupon.kind === "rate")</text>
+<text class="A" x="806" y="466" text-anchor="end">38</text><text class="A" x="822" y="466">    return Math.floor(subtotal * coupon.rate);</text>
+<text class="mu" x="376" y="488" text-anchor="end">35</text><text class="fg" x="392" y="488">  return coupon.amount;</text>
+<text class="mu" x="806" y="488" text-anchor="end">39</text><text class="fg" x="822" y="488">  return coupon.amount;</text>
+<text class="mu" x="376" y="510" text-anchor="end">36</text><text class="fg" x="392" y="510">}</text>
+<text class="mu" x="806" y="510" text-anchor="end">40</text><text class="fg" x="822" y="510">}</text>
+</g>
+</g>
+</svg>

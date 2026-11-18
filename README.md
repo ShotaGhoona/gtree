@@ -9,7 +9,7 @@
       └─ 変更されたファイル  → 右に差分
 ```
 
-![GTREE の画面](docs/screenshot.png)
+![GTREE の画面（架空のデータ）](docs/screen.svg)
 
 Claude Code などで worktree を並行して使っていると、「どの worktree で何が増えて何が変わったか」を見るためにエディタを何枚も開くことになります。GTREE は、差分を見ることだけに絞ってそれを1画面にまとめます。
 
