@@ -457,7 +457,7 @@ PAGE = r"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GTREE</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2337352f'/%3E%3Cpath d='M8 5.5v13M8 9.5c0 3.5 8 1.5 8 5.5v1' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='5.5' r='2' fill='%23fff'/%3E%3Ccircle cx='8' cy='18.5' r='2' fill='%23fff'/%3E%3Ccircle cx='16' cy='17' r='2' fill='%233cadba'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3E.l%7Bstroke:%2337352f%7D%40media %28prefers-color-scheme:dark%29%7B.l%7Bstroke:%23e6e5e1%7D%7D%3C/style%3E%3Cpath class='l' d='M8.6 8h8.4M8.6 16h8.4' stroke-width='1.6'/%3E%3Cpath class='l' d='M21.5 3.5H3.5V20.5H20.5V12H8.6' stroke-width='3' fill='none' stroke-linejoin='miter'/%3E%3Ccircle cx='8.6' cy='8' r='1.8' fill='%23e0a030'/%3E%3Ccircle cx='8.6' cy='12' r='1.8' fill='%235b8def'/%3E%3Ccircle cx='8.6' cy='16' r='1.8' fill='%23a68cd9'/%3E%3C/svg%3E">
 <style>
 :root{--hh:96px;--bg:#fff;--panel:#fbfbfa;--fg:#37352f;--sub:#73726e;--mu:#9b9a97;--bd:#ebeae7;--hover:rgba(55,53,47,.08);--hover2:rgba(55,53,47,.12);
 --sel:#e7f0fa;--selfg:#0c447c;--card:#fff;--cardbd:#e9e8e4;--logo:#37352f;
@@ -578,7 +578,7 @@ pre.raw{margin:0;padding:8px 32px;line-height:1.7;font-size:12px;white-space:pre
  <aside class="side">
   <div class="side-top">
   <div class="brand">
-   <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--logo)"/><path d="M8 5.5v13M8 9.5c0 3.5 8 1.5 8 5.5v1" stroke="var(--bg)" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="8" cy="5.5" r="2" fill="var(--bg)"/><circle cx="8" cy="18.5" r="2" fill="var(--bg)"/><circle cx="16" cy="17" r="2" fill="#3cadba"/></svg>
+   <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 8h8.4M8.6 16h8.4" stroke="var(--logo)" stroke-width="1.6"/><path d="M21.5 3.5H3.5V20.5H20.5V12H8.6" stroke="var(--logo)" stroke-width="3" fill="none" stroke-linejoin="miter"/><circle cx="8.6" cy="8" r="1.8" fill="#e0a030"/><circle cx="8.6" cy="12" r="1.8" fill="#5b8def"/><circle cx="8.6" cy="16" r="1.8" fill="#a68cd9"/></svg>
    <span class="wm">GTREE</span>
    <span class="tag" id="status" title="5秒ごとに自動で読み直します"><span class="dot" id="dot"></span><span id="ago">読み込み中</span></span>
   </div>
@@ -594,7 +594,7 @@ pre.raw{margin:0;padding:8px 32px;line-height:1.7;font-size:12px;white-space:pre
  <div class="drag" id="drag"></div>
  <main class="main">
   <div class="head" id="head"><div class="hint">左のファイルを選ぶと、ここに差分が出ます</div></div>
-  <div class="body" id="body"><div class="empty"><svg width="40" height="40" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="var(--logo)"/><path d="M8 5.5v13M8 9.5c0 3.5 8 1.5 8 5.5v1" stroke="var(--bg)" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="8" cy="5.5" r="2" fill="var(--bg)"/><circle cx="8" cy="18.5" r="2" fill="var(--bg)"/><circle cx="16" cy="17" r="2" fill="#3cadba"/></svg><div>左のファイルを選ぶと差分が出ます</div><div style="font-size:12px;margin-top:4px">j / k で移動 · / で絞り込み · r で今すぐ更新</div></div></div>
+  <div class="body" id="body"><div class="empty"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M8.6 8h8.4M8.6 16h8.4" stroke="var(--logo)" stroke-width="1.6"/><path d="M21.5 3.5H3.5V20.5H20.5V12H8.6" stroke="var(--logo)" stroke-width="3" fill="none" stroke-linejoin="miter"/><circle cx="8.6" cy="8" r="1.8" fill="#e0a030"/><circle cx="8.6" cy="12" r="1.8" fill="#5b8def"/><circle cx="8.6" cy="16" r="1.8" fill="#a68cd9"/></svg><div>左のファイルを選ぶと差分が出ます</div><div style="font-size:12px;margin-top:4px">j / k で移動 · / で絞り込み · r で今すぐ更新</div></div></div>
  </main>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
