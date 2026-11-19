@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTREE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3E.l%7Bstroke:%2337352f%7D%40media %28prefers-color-scheme:dark%29%7B.l%7Bstroke:%23e6e5e1%7D%7D%3C/style%3E%3Cpath class='l' d='M8.6 8h8.4M8.6 16h8.4' stroke-width='1.6'/%3E%3Cpath class='l' d='M21.5 3.5H3.5V20.5H20.5V12H8.6' stroke-width='3' fill='none' stroke-linejoin='miter'/%3E%3Ccircle cx='8.6' cy='8' r='1.8' fill='%23e0a030'/%3E%3Ccircle cx='8.6' cy='12' r='1.8' fill='%235b8def'/%3E%3Ccircle cx='8.6' cy='16' r='1.8' fill='%23a68cd9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/web/style.css"></head><body>
+<div class="app" id="app">
+ <aside class="side">
+  <div class="side-top">
+  <div class="brand">
+   <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 8h8.4M8.6 16h8.4" stroke="var(--logo)" stroke-width="1.6"/><path d="M21.5 3.5H3.5V20.5H20.5V12H8.6" stroke="var(--logo)" stroke-width="3" fill="none" stroke-linejoin="miter"/><circle cx="8.6" cy="8" r="1.8" fill="#e0a030"/><circle cx="8.6" cy="12" r="1.8" fill="#5b8def"/><circle cx="8.6" cy="16" r="1.8" fill="#a68cd9"/></svg>
+   <span class="wm">GTREE</span>
+   <span class="tag" id="status" title="5秒ごとに自動で読み直します"><span class="dot" id="dot"></span><span id="ago">読み込み中</span></span>
+  </div>
+  <div class="tools">
+   <input class="search" type="search" id="q" placeholder="絞り込み（/）">
+   <div class="seg" id="seg">
+    <button data-v="all" class="on" title="すべて" aria-label="すべて"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button><button data-v="wip" title="未コミットだけ" aria-label="未コミットだけ"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></svg></button><button data-v="commit" title="commit済だけ" aria-label="commit済だけ"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.6"/><path d="M1.5 8h3.9M10.6 8h3.9"/></svg></button>
+   </div>
+  </div>
+  </div>
+  <div class="tree" id="tree"></div>
+ </aside>
+ <div class="drag" id="drag"></div>
+ <main class="main">
+  <div class="head" id="head"><div class="hint">左のファイルを選ぶと、ここに差分が出ます</div></div>
+  <div class="body" id="body"><div class="empty"><svg width="40" height="40" viewBox="0 0 24 24"><path d="M8.6 8h8.4M8.6 16h8.4" stroke="var(--logo)" stroke-width="1.6"/><path d="M21.5 3.5H3.5V20.5H20.5V12H8.6" stroke="var(--logo)" stroke-width="3" fill="none" stroke-linejoin="miter"/><circle cx="8.6" cy="8" r="1.8" fill="#e0a030"/><circle cx="8.6" cy="12" r="1.8" fill="#5b8def"/><circle cx="8.6" cy="16" r="1.8" fill="#a68cd9"/></svg><div>左のファイルを選ぶと差分が出ます</div><div style="font-size:12px;margin-top:4px">j / k で移動 · / で絞り込み · r で今すぐ更新 · 行番号をドラッグして ⌘C で「パス:行」をコピー</div></div></div>
+ </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="/web/js/util.js"></script>
+<script src="/web/js/state.js"></script>
+<script src="/web/js/tree.js"></script>
+<script src="/web/js/menu.js"></script>
+<script src="/web/js/diff.js"></script>
+<script src="/web/js/view.js"></script>
+<script src="/web/js/lines.js"></script>
+<script src="/web/js/main.js"></script></body></html>
